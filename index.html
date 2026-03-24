@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Metro</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Unbounded:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+/* ================================
+   RESET & TOKENS
+================================ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07070f;
+  --s1:#0e0e1a;
+  --s2:#141422;
+  --s3:#1c1c2e;
+  --acc:#c8ff57;   /* 강박 / 메인 */
+  --acc2:#ff4d6d;  /* STOP / 경고 */
+  --acc3:#38d9ff;  /* 약박 / 마이크 */
+  --acc4:#ffaa33;  /* BT / 세분 */
+  --txt:#e6e6f0;
+  --mut:#3e3e58;
+  --mut2:#252538;
+  --r:14px;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);
+  font-family:'DM Mono',monospace;-webkit-font-smoothing:antialiased;touch-action:manipulation}
+body{display:flex;flex-direction:column;max-width:430px;margin:0 auto;height:100dvh}
+
+/* ================================
+   NAV
+================================ */
+.nav{display:flex;background:var(--s1);border-bottom:1px solid var(--mut2);flex-shrink:0;position:relative;z-index:10}
+.nav-tab{flex:1;padding:11px 0 9px;font-size:8px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--mut);cursor:pointer;border:none;background:none;font-family:'DM Mono',monospace;
+  transition:color .15s;-webkit-tap-highlight-color:transparent;
+  display:flex;flex-direction:column;align-items:center;gap:3px}
+.nav-tab .ni{font-size:16px}
+.nav-tab.active{color:var(--acc)}
+.nt-bar{width:18px;height:2px;border-radius:1px;margin-top:1px}
+.nav-tab.active .nt-bar{background:var(--acc)}
+
+/* ================================
+   SCREENS
+================================ */
+.screens{flex:1;overflow:hidden;position:relative}
+.screen{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;
+  display:none;flex-direction:column;padding:18px 16px 44px;gap:14px}
+.screen.active{display:flex}
+.screen::-webkit-scrollbar{display:none}
+
+/* ================================
+   CARD / LABEL
+================================ */
+.card{background:var(--s1);border:1px solid var(--mut2);border-radius:var(--r);padding:16px}
+.lbl{font-size:8px;letter-spacing:3px;color:var(--mut);text-transform:uppercase;margin-bottom:10px}
+
+/* ================================
+   SCREEN 1 — METRO
+================================ */
+
+/* BPM */
+.bpm-hero{display:flex;align-items:center;justify-content:center;gap:6px;padding:2px 0 4px}
+.bpm-col{display:flex;flex-direction:column;gap:5px}
+.adj{width:34px;height:34px;border-radius:9px;background:var(--s2);border:1px solid var(--mut2);
+  color:var(--txt);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .12s;-webkit-tap-highlight-color:transparent;font-family:'DM Mono',monospace}
+.adj:active{background:var(--acc);color:#000;transform:scale(.88)}
+.adj.sm{font-size:10px}
+.bpm-mid{display:flex;flex-direction:column;align-items:center}
+.bpm-n{font-family:'Unbounded',sans-serif;font-size:84px;line-height:1;color:var(--acc);
+  letter-spacing:-3px;cursor:ns-resize;user-select:none;padding:0 12px;min-width:168px;text-align:center}
+.bpm-u{font-size:8px;letter-spacing:3px;color:var(--mut);text-transform:uppercase;margin-top:2px}
+.bpm-w{font-size:10px;color:var(--acc3);letter-spacing:2px;text-transform:uppercase;margin-top:3px}
+.bpm-sl{width:100%;-webkit-appearance:none;appearance:none;height:3px;border-radius:2px;
+  background:var(--mut2);outline:none;cursor:pointer;margin-top:12px}
+.bpm-sl::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+  background:var(--acc);box-shadow:0 0 10px rgba(200,255,87,.5);cursor:pointer}
+.bpm-range{display:flex;justify-content:space-between;font-size:8px;color:var(--mut);margin-top:5px}
+
+/* Ring progress */
+.ring-wrap{position:relative;width:174px;height:174px;margin:0 auto}
+.ring-wrap svg{width:100%;height:100%;transform:rotate(-90deg)}
+.r-bg{stroke:var(--mut2);stroke-width:7;fill:none}
+.r-fill{stroke:var(--acc);stroke-width:7;fill:none;stroke-linecap:round;transition:stroke-dashoffset .04s linear}
+.ring-cx{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-n{font-family:'Unbounded',sans-serif;font-size:46px;color:var(--acc);line-height:1;transition:color .06s}
+.ring-of{font-size:8px;color:var(--mut);letter-spacing:2px;margin-top:3px}
+.beat-dots{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;max-width:250px}
+.bdot{width:11px;height:11px;border-radius:50%;background:var(--mut2);border:1.5px solid var(--mut);
+  transition:all .06s;cursor:pointer;flex-shrink:0}
+.bdot.acc-d {border-color:var(--acc);background:rgba(200,255,87,.15)}
+.bdot.mut-d {border-color:var(--mut2);background:transparent;border-style:dashed}
+.bdot.active.acc-d{background:var(--acc);box-shadow:0 0 12px var(--acc);transform:scale(1.35)}
+.bdot.active.nor-d{background:#fff;box-shadow:0 0 8px rgba(255,255,255,.5);transform:scale(1.2)}
+.bdot.active.mut-d{background:var(--mut);transform:scale(1.1)}
+.bar-track{width:100%;height:5px;background:var(--mut2);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--acc),var(--acc3));border-radius:3px;width:0%;transition:width .04s linear}
+
+/* Time sig */
+.tsig-row{display:flex;gap:7px;flex-wrap:wrap}
+.ts-btn{padding:7px 12px;border-radius:8px;border:1px solid var(--mut2);background:var(--s2);
+  color:var(--mut);font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;
+  transition:all .15s;-webkit-tap-highlight-color:transparent}
+.ts-btn.active{background:rgba(200,255,87,.1);border-color:var(--acc);color:var(--acc)}
+.ts-btn:active{transform:scale(.91)}
+
+/* Sound */
+.snd-row{display:flex;gap:6px;flex-wrap:wrap}
+.snd-btn{padding:7px 12px;border-radius:8px;border:1px solid var(--mut2);background:var(--s2);
+  color:var(--mut);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;
+  transition:all .15s;-webkit-tap-highlight-color:transparent}
+.snd-btn.active{border-color:var(--acc3);color:var(--acc3);background:rgba(56,217,255,.1)}
+.snd-btn:active{transform:scale(.91)}
+.vol-row{display:flex;align-items:center;gap:10px;margin-top:10px}
+.vol-sl{flex:1;-webkit-appearance:none;appearance:none;height:3px;border-radius:2px;
+  background:var(--mut2);outline:none;cursor:pointer}
+.vol-sl::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+  background:var(--acc3);cursor:pointer}
+
+/* Controls */
+.ctrl-row{display:flex;gap:10px;align-items:center}
+.play-btn{flex:1;height:62px;border-radius:13px;border:none;background:var(--acc);color:#000;
+  font-family:'Unbounded',sans-serif;font-size:21px;letter-spacing:2px;cursor:pointer;
+  transition:all .15s;-webkit-tap-highlight-color:transparent;font-weight:700}
+.play-btn.playing{background:var(--acc2);color:#fff}
+.play-btn:active{transform:scale(.95)}
+.tap-btn{width:62px;height:62px;border-radius:13px;border:2px solid var(--acc3);background:transparent;
+  color:var(--acc3);font-family:'DM Mono',monospace;font-size:8px;letter-spacing:1px;cursor:pointer;
+  transition:all .15s;-webkit-tap-highlight-color:transparent;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.tap-btn .ti{font-size:22px}
+.tap-btn:active{background:var(--acc3);color:#000}
+
+/* BT Latency */
+.bt-toggle-row{display:flex;align-items:center;gap:10px;margin-bottom:0}
+.bt-sw{position:relative;width:42px;height:22px;flex-shrink:0}
+.bt-sw input{opacity:0;width:0;height:0;position:absolute}
+.bt-track{position:absolute;inset:0;border-radius:11px;background:var(--mut2);cursor:pointer;transition:background .2s}
+.bt-track::before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;
+  border-radius:50%;background:#fff;transition:transform .2s}
+.bt-sw input:checked+.bt-track{background:var(--acc4)}
+.bt-sw input:checked+.bt-track::before{transform:translateX(20px)}
+.bt-lbl{font-size:11px;color:var(--txt)}
+.bt-sub{font-size:9px;color:var(--mut);margin-left:auto}
+.bt-body{margin-top:12px;display:flex;flex-direction:column;gap:10px}
+.bt-lat-row{display:flex;align-items:center;gap:10px}
+.bt-lat-sl{flex:1;-webkit-appearance:none;appearance:none;height:3px;border-radius:2px;
+  background:var(--mut2);outline:none;cursor:pointer}
+.bt-lat-sl::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;
+  background:var(--acc4);box-shadow:0 0 8px rgba(255,170,51,.4);cursor:pointer}
+.bt-lat-n{font-family:'Unbounded',sans-serif;font-size:18px;color:var(--acc4);min-width:52px;text-align:right}
+.bt-lat-n span{font-size:10px;color:var(--mut)}
+.bt-presets{display:flex;gap:6px;flex-wrap:wrap}
+.bt-pre{padding:6px 10px;border-radius:8px;border:1px solid var(--mut2);background:var(--s2);
+  color:var(--mut);font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;
+  transition:all .14s;-webkit-tap-highlight-color:transparent;
+  display:flex;flex-direction:column;align-items:center;gap:1px}
+.bt-pre .sub{font-size:7px;color:var(--mut)}
+.bt-pre.active{border-color:var(--acc4);color:var(--acc4);background:rgba(255,170,51,.1)}
+.bt-pre:active{transform:scale(.9)}
+.bt-auto{width:100%;padding:11px;border-radius:10px;border:1.5px solid var(--acc3);
+  background:transparent;color:var(--acc3);font-family:'DM Mono',monospace;
+  font-size:11px;letter-spacing:1px;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.bt-auto:active{background:var(--acc3);color:#000}
+.bt-auto.meas{border-color:var(--acc4);color:var(--acc4);animation:blink-btn .5s infinite alternate}
+@keyframes blink-btn{from{opacity:1}to{opacity:.35}}
+.bt-status{font-size:9px;color:var(--mut);text-align:center;letter-spacing:.5px;min-height:14px;line-height:1.5}
+
+/* ================================
+   SCREEN 2 — RHYTHM
+================================ */
+.sub-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.sub-psets{display:flex;gap:5px}
+.sub-pre{padding:5px 10px;border-radius:7px;border:1px solid var(--mut2);background:var(--s2);
+  color:var(--mut);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;
+  transition:all .14s;-webkit-tap-highlight-color:transparent}
+.sub-pre.active{border-color:var(--acc4);color:var(--acc4);background:rgba(255,170,51,.1)}
+.sub-pre:active{transform:scale(.9)}
+
+.type-leg{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px}
+.tl-i{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--mut)}
+.tl-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+.full-grid{display:flex;flex-direction:column;gap:8px}
+.beat-row{display:flex;align-items:center;gap:5px}
+.beat-rl{font-size:10px;color:var(--mut);width:16px;text-align:right;flex-shrink:0}
+.sub-cells{display:flex;gap:3px;flex:1}
+.sc{flex:1;border-radius:7px;cursor:pointer;transition:all .07s;position:relative;
+  -webkit-tap-highlight-color:transparent;height:38px;display:flex;align-items:center;
+  justify-content:center;border:1.5px solid transparent}
+.sc[data-t="accent"]{background:rgba(200,255,87,.1);border-color:var(--acc)}
+.sc[data-t="normal"]{background:rgba(255,255,255,.05);border-color:var(--mut)}
+.sc[data-t="muted"] {background:rgba(255,255,255,.02);border-color:var(--mut2);border-style:dashed}
+.sc[data-t="ghost"] {background:transparent;border-color:var(--mut2);opacity:.4}
+.sc.active[data-t="accent"]{background:var(--acc);border-color:var(--acc);box-shadow:0 0 14px rgba(200,255,87,.5)}
+.sc.active[data-t="normal"]{background:#ddd;border-color:#fff;box-shadow:0 0 8px rgba(255,255,255,.35)}
+.sc.active[data-t="muted"] {background:var(--mut);border-color:var(--mut)}
+.sc.active[data-t="ghost"] {background:rgba(255,255,255,.12)}
+.sc:active{transform:scale(.85)}
+.sc-dot{width:6px;height:6px;border-radius:50%}
+.sc[data-t="accent"] .sc-dot{background:var(--acc)}
+.sc[data-t="normal"] .sc-dot{background:var(--txt)}
+.sc[data-t="muted"]  .sc-dot{background:var(--mut)}
+.sc[data-t="ghost"]  .sc-dot{background:var(--mut2)}
+.sc-n{position:absolute;top:2px;left:4px;font-size:7px;opacity:.35;color:inherit}
+
+.vel-grid{display:flex;flex-direction:column;gap:7px}
+.vel-row{display:flex;align-items:center;gap:8px}
+.vel-lbl{font-size:10px;color:var(--mut);width:26px}
+.vel-wrap{flex:1;height:18px;background:var(--mut2);border-radius:4px;overflow:hidden;
+  cursor:ew-resize;position:relative;touch-action:none}
+.vel-bar{height:100%;background:var(--acc);border-radius:4px;transition:width .05s}
+.vel-val{font-size:10px;color:var(--mut);width:26px;text-align:right}
+.hum-row{display:flex;align-items:center;gap:10px;margin-top:8px}
+.hum-sl{flex:1;-webkit-appearance:none;appearance:none;height:3px;border-radius:2px;
+  background:var(--mut2);outline:none;cursor:pointer}
+.hum-sl::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+  background:var(--acc4);cursor:pointer}
+
+/* ================================
+   SCREEN 3 — MONITOR
+================================ */
+.mon-hdr{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.mon-dot{width:9px;height:9px;border-radius:50%;background:var(--mut2);flex-shrink:0;transition:background .2s}
+.mon-dot.on{background:var(--acc2);box-shadow:0 0 8px var(--acc2);animation:blink 1.2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.mic-btn{width:100%;padding:12px;border-radius:11px;border:2px solid var(--acc2);background:transparent;
+  color:var(--acc2);font-family:'DM Mono',monospace;font-size:12px;letter-spacing:1px;cursor:pointer;
+  transition:all .15s;-webkit-tap-highlight-color:transparent}
+.mic-btn:active{background:var(--acc2);color:#000}
+.mic-btn.on{border-color:var(--mut);color:var(--mut);font-size:11px}
+
+.wf-wrap{height:90px;background:var(--s2);border-radius:10px;overflow:hidden;border:1px solid var(--mut2)}
+.onset-wrap{height:34px;background:var(--s2);border-radius:8px;overflow:hidden;border:1px solid var(--mut2);margin-top:6px}
+canvas{width:100%;height:100%;display:block}
+.sens-row{display:flex;align-items:center;gap:10px;margin-top:9px}
+.sens-sl{flex:1;-webkit-appearance:none;appearance:none;height:3px;border-radius:2px;
+  background:var(--mut2);outline:none;cursor:pointer}
+.sens-sl::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+  background:var(--acc2);cursor:pointer}
+
+.match-big{display:flex;flex-direction:column;align-items:center;gap:3px;margin-bottom:14px}
+.match-pct{font-family:'Unbounded',sans-serif;font-size:60px;color:var(--acc);line-height:1}
+.match-pct.warn{color:var(--acc4)}
+.match-pct.bad{color:var(--acc2)}
+.match-sub{font-size:9px;color:var(--mut);letter-spacing:1px}
+.histo-wrap{height:54px;background:var(--s2);border-radius:9px;overflow:hidden;
+  border:1px solid var(--mut2);position:relative}
+.histo-cl{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--acc);opacity:.3}
+.hit-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.hit{padding:4px 9px;border-radius:6px;font-size:9px;letter-spacing:.5px;
+  background:var(--s2);border:1px solid var(--mut2);color:var(--mut)}
+.hit.on  {border-color:var(--acc);color:var(--acc);background:rgba(200,255,87,.07)}
+.hit.early{border-color:var(--acc3);color:var(--acc3);background:rgba(56,217,255,.07)}
+.hit.late {border-color:var(--acc4);color:var(--acc4);background:rgba(255,170,51,.07)}
+
+/* error / diag boxes */
+.err-box{margin-top:9px;padding:11px 13px;border-radius:10px;
+  background:rgba(255,77,109,.08);border:1px solid var(--acc2);
+  color:var(--acc2);font-size:10px;line-height:1.65;white-space:pre-line;letter-spacing:.3px}
+.diag-box{margin-top:7px;padding:9px 12px;border-radius:8px;
+  background:rgba(56,217,255,.06);border:1px solid rgba(56,217,255,.2);
+  color:rgba(56,217,255,.6);font-size:9px;line-height:1.7;white-space:pre-line;letter-spacing:.3px}
+</style>
+</head>
+<body>
+
+<!-- ========== NAV ========== -->
+<nav class="nav">
+  <button class="nav-tab active" data-sc="metro">
+    <span class="ni">♩</span><span>메트로놈</span><div class="nt-bar"></div>
+  </button>
+  <button class="nav-tab" data-sc="rhythm">
+    <span class="ni">⠿</span><span>리듬</span><div class="nt-bar"></div>
+  </button>
+  <button class="nav-tab" data-sc="monitor">
+    <span class="ni">🎤</span><span>모니터</span><div class="nt-bar"></div>
+  </button>
+</nav>
+
+<div class="screens">
+
+<!-- ==============================
+     SCREEN 1 · METRO
+============================== -->
+<div class="screen active" id="sc-metro">
+
+  <!-- BPM -->
+  <div class="card">
+    <div class="bpm-hero">
+      <div class="bpm-col">
+        <button class="adj" id="bUp">▲</button>
+        <button class="adj sm" id="bUp10">+10</button>
+      </div>
+      <div class="bpm-mid">
+        <div class="bpm-n" id="bpmN">120</div>
+        <div class="bpm-u">BPM</div>
+        <div class="bpm-w" id="bpmW">Allegro</div>
+      </div>
+      <div class="bpm-col">
+        <button class="adj" id="bDn">▼</button>
+        <button class="adj sm" id="bDn10">−10</button>
+      </div>
+    </div>
+    <input type="range" class="bpm-sl" id="bpmSl" min="20" max="300" value="120">
+    <div class="bpm-range">
+      <span>20</span><span>Largo</span><span>Andante</span><span>Allegro</span><span>300</span>
+    </div>
+  </div>
+
+  <!-- Beat Progress Ring -->
+  <div class="card" style="display:flex;flex-direction:column;align-items:center;gap:10px">
+    <div class="lbl" style="align-self:flex-start">박자 진행</div>
+    <div class="ring-wrap">
+      <svg viewBox="0 0 200 200">
+        <circle class="r-bg" cx="100" cy="100" r="86"/>
+        <circle class="r-fill" id="rFill" cx="100" cy="100" r="86"
+          stroke-dasharray="540" stroke-dashoffset="540"/>
+      </svg>
+      <div class="ring-cx">
+        <div class="ring-n" id="rNum">–</div>
+        <div class="ring-of" id="rOf">/ 4</div>
+      </div>
+    </div>
+    <div class="beat-dots" id="beatDots"></div>
+    <div class="bar-track" style="width:100%"><div class="bar-fill" id="barFill"></div></div>
+  </div>
+
+  <!-- Time Signature -->
+  <div class="card">
+    <div class="lbl">박자표</div>
+    <div class="tsig-row" id="tsigRow">
+      <button class="ts-btn active" data-b="4">4/4</button>
+      <button class="ts-btn" data-b="3">3/4</button>
+      <button class="ts-btn" data-b="6">6/8</button>
+      <button class="ts-btn" data-b="5">5/4</button>
+      <button class="ts-btn" data-b="7">7/8</button>
+      <button class="ts-btn" data-b="2">2/4</button>
+    </div>
+  </div>
+
+  <!-- Sound -->
+  <div class="card">
+    <div class="lbl">사운드</div>
+    <div class="snd-row" id="sndRow">
+      <button class="snd-btn active" data-s="click">클릭</button>
+      <button class="snd-btn" data-s="wood">우드</button>
+      <button class="snd-btn" data-s="beep">비프</button>
+      <button class="snd-btn" data-s="rim">림샷</button>
+      <button class="snd-btn" data-s="sine">사인</button>
+    </div>
+    <div class="vol-row">
+      <span style="font-size:13px">🔉</span>
+      <input type="range" class="vol-sl" id="volSl" min="0" max="1" step="0.01" value="0.8">
+      <span style="font-size:13px">🔊</span>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="ctrl-row">
+    <button class="tap-btn" id="tapBtn"><span class="ti">👆</span><span>TAP</span></button>
+    <button class="play-btn" id="playBtn">START</button>
+  </div>
+
+  <!-- Bluetooth Latency -->
+  <div class="card">
+    <div class="bt-toggle-row">
+      <label class="bt-sw">
+        <input type="checkbox" id="btToggle">
+        <span class="bt-track"></span>
+      </label>
+      <span class="bt-lbl">🔵 블루투스 출력 보정</span>
+      <span class="bt-sub" id="btSub">꺼짐</span>
+    </div>
+    <div class="bt-body" id="btBody" style="display:none">
+      <div class="bt-lat-row">
+        <input type="range" class="bt-lat-sl" id="btSl" min="0" max="500" step="5" value="150">
+        <div class="bt-lat-n"><span id="btLatN">150</span><span>ms</span></div>
+      </div>
+      <div class="bt-presets" id="btPresets">
+        <button class="bt-pre" data-ms="50">50ms<span class="sub">저지연</span></button>
+        <button class="bt-pre active" data-ms="150">150ms<span class="sub">일반 BT</span></button>
+        <button class="bt-pre" data-ms="200">200ms<span class="sub">보급형</span></button>
+        <button class="bt-pre" data-ms="300">300ms<span class="sub">구형</span></button>
+      </div>
+      <button class="bt-auto" id="btAuto">🎯 자동 레이턴시 측정</button>
+      <div class="bt-status" id="btStatus">마이크를 켠 후 자동 측정을 시작하세요</div>
+    </div>
+  </div>
+
+</div><!-- /sc-metro -->
+
+<!-- ==============================
+     SCREEN 2 · RHYTHM
+============================== -->
+<div class="screen" id="sc-rhythm">
+
+  <!-- Subdivision -->
+  <div class="card">
+    <div class="sub-hdr">
+      <div class="lbl" style="margin:0">세분화</div>
+      <div class="sub-psets" id="subPsets">
+        <button class="sub-pre active" data-sub="1">1분음</button>
+        <button class="sub-pre" data-sub="2">2분음</button>
+        <button class="sub-pre" data-sub="3">3연음</button>
+        <button class="sub-pre" data-sub="4">4분음</button>
+      </div>
+    </div>
+    <div class="type-leg">
+      <div class="tl-i"><div class="tl-dot" style="background:var(--acc)"></div><span>강박</span></div>
+      <div class="tl-i"><div class="tl-dot" style="background:var(--mut)"></div><span>약박</span></div>
+      <div class="tl-i"><div class="tl-dot" style="border:1.5px dashed var(--mut);background:transparent;box-sizing:border-box"></div><span>뮤트</span></div>
+      <div class="tl-i"><div class="tl-dot" style="background:transparent;border:1px solid var(--mut2);box-sizing:border-box;opacity:.5"></div><span>고스트</span></div>
+      <span style="font-size:8px;color:var(--mut);margin-left:2px">탭하여 순환</span>
+    </div>
+  </div>
+
+  <!-- Beat · Sub grid -->
+  <div class="card">
+    <div class="lbl">비트 · 세분 그리드</div>
+    <div class="full-grid" id="fullGrid"></div>
+  </div>
+
+  <!-- Velocity + Humanize -->
+  <div class="card">
+    <div class="lbl">벨로시티</div>
+    <div class="vel-grid" id="velGrid"></div>
+    <div class="hum-row">
+      <span style="font-size:10px;color:var(--mut)">휴머나이즈</span>
+      <input type="range" class="hum-sl" id="humSl" min="0" max="30" value="0">
+      <span style="font-size:10px;color:var(--mut);min-width:32px;text-align:right" id="humV">0ms</span>
+    </div>
+  </div>
+
+</div><!-- /sc-rhythm -->
+
+<!-- ==============================
+     SCREEN 3 · MONITOR
+============================== -->
+<div class="screen" id="sc-monitor">
+
+  <!-- Mic control -->
+  <div class="card">
+    <div class="mon-hdr">
+      <div class="mon-dot" id="monDot"></div>
+      <span style="font-size:10px;color:var(--mut);letter-spacing:1px" id="monStatus">마이크 비활성</span>
+      <span style="flex:1"></span>
+      <span style="font-size:10px;color:var(--mut)" id="monBpm"></span>
+    </div>
+    <button class="mic-btn" id="micBtn">🎤 마이크 활성화</button>
+  </div>
+
+  <!-- Waveform + onset -->
+  <div class="card">
+    <div class="lbl">실시간 파형 + 박자 그리드</div>
+    <div class="wf-wrap"><canvas id="wfCv"></canvas></div>
+    <div class="onset-wrap"><canvas id="osCv"></canvas></div>
+    <div class="sens-row">
+      <span style="font-size:10px;color:var(--mut)">감도</span>
+      <input type="range" class="sens-sl" id="sensSl" min="1" max="100" value="40">
+      <span style="font-size:10px;color:var(--mut);min-width:22px;text-align:right" id="sensV">40</span>
+    </div>
+  </div>
+
+  <!-- Match score -->
+  <div class="card">
+    <div class="lbl">리듬 일치도</div>
+    <div class="match-big">
+      <div class="match-pct" id="matchPct">–%</div>
+      <div class="match-sub" id="matchSub">메트로놈을 시작하고 마이크를 켜세요</div>
+    </div>
+    <div style="font-size:8px;color:var(--mut);letter-spacing:2px;margin-bottom:6px">타이밍 히스토그램</div>
+    <div class="histo-wrap">
+      <canvas id="hiCv"></canvas>
+      <div class="histo-cl"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:8px;color:var(--mut);margin-top:4px">
+      <span>← 빠름</span><span>정확</span><span>늦음 →</span>
+    </div>
+    <div class="hit-row" id="hitRow"></div>
+  </div>
+
+</div><!-- /sc-monitor -->
+
+</div><!-- /screens -->
+
+<script>
+(function(){
+'use strict';
+
+/* ================================
+   STATE
+================================ */
+let bpm = 120;
+let isPlaying = false;
+let numBeats = 4;
+let subdivision = 1;
+let soundType = 'click';
+let volume = 0.8;
+let humanize = 0;        // ms timing jitter
+let btEnabled = false;
+let btLatency = 150;     // ms bluetooth compensation
+
+let beatTypes = [];      // 'accent'|'normal'|'muted'  per beat
+let subTypes  = [];      // [beat][sub] same values + 'ghost'
+let beatVel   = [];      // 0..1 per beat
+
+let audioCtx = null;
+let nextBeatTime = 0;
+let currentBeat = -1;
+let schedTimer = null;
+let animRaf = null;
+let beatQueue = [];      // {beat, sub, time, type}
+let tapTimes = [];
+
+// Monitor
+let micStream = null;
+let analyser = null;
+let micActive = false;
+let sensitivity = 40;
+let onsetHistory = [];   // {time, energy, diff}
+let beatExpected = [];   // {time}
+let histoData = new Array(60).fill(0);
+let recentDiffs = [];
+let monRaf = null;
+let prevEnergy = 0;
+let onsetCooldown = 0;
+let wfCtx, osCtx, hiCtx;
+
+// BT measure
+let btMeasuring = false;
+let btSamples = [];
+let btTimer = null;
+
+const CIRC = 2 * Math.PI * 86;
+const LOOK = 0.12;   // lookahead seconds
+const SCHED = 25;    // scheduler interval ms
+
+/* ================================
+   TEMPO NAMES
+================================ */
+const TEMPOS = [
+  [20,'Larghissimo'],[40,'Grave'],[60,'Largo'],[66,'Larghetto'],
+  [76,'Adagio'],[108,'Andante'],[120,'Moderato'],[156,'Allegro'],
+  [176,'Vivace'],[200,'Presto'],[9999,'Prestissimo']
+];
+const tName = b => { for(const[l,n]of TEMPOS)if(b<l)return n; return'Prestissimo'; };
+
+/* ================================
+   AUDIO CONTEXT
+================================ */
+function ensureCtx(){
+  if(!audioCtx) audioCtx = new(window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==='suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+/* ================================
+   STATE INIT
+================================ */
+function initState(){
+  beatTypes=[]; subTypes=[]; beatVel=[];
+  for(let b=0; b<numBeats; b++){
+    const t = b===0 ? 'accent' : 'normal';
+    beatTypes.push(t);
+    beatVel.push(b===0 ? 1 : 0.7);
+    subTypes.push([]);
+    for(let s=0; s<subdivision; s++)
+      subTypes[b].push(s===0 ? t : 'ghost');
+  }
+}
+
+/* ================================
+   BPM
+================================ */
+function setBPM(v){
+  bpm = Math.max(20, Math.min(300, v));
+  document.getElementById('bpmN').textContent = bpm;
+  document.getElementById('bpmW').textContent = tName(bpm);
+  document.getElementById('bpmSl').value = bpm;
+  document.getElementById('monBpm').textContent = isPlaying ? bpm+' BPM' : '';
+}
+
+/* ================================
+   RENDER — METRO SCREEN
+================================ */
+function renderDots(){
+  const c = document.getElementById('beatDots'); c.innerHTML='';
+  document.getElementById('rOf').textContent = '/ '+numBeats;
+  for(let i=0; i<numBeats; i++){
+    const d = document.createElement('div');
+    const cls = beatTypes[i]==='accent' ? 'acc-d' : beatTypes[i]==='muted' ? 'mut-d' : 'nor-d';
+    d.className = 'bdot '+cls;
+    d.addEventListener('click', ()=>cycleBeat(i));
+    c.appendChild(d);
+  }
+}
+
+/* ================================
+   RENDER — RHYTHM SCREEN
+================================ */
+function renderGrid(){
+  const g = document.getElementById('fullGrid'); g.innerHTML='';
+  for(let b=0; b<numBeats; b++){
+    const row = document.createElement('div'); row.className='beat-row';
+    const lbl = document.createElement('div'); lbl.className='beat-rl'; lbl.textContent=b+1;
+    row.appendChild(lbl);
+    const cells = document.createElement('div'); cells.className='sub-cells';
+    for(let s=0; s<subdivision; s++){
+      const cell = document.createElement('div');
+      cell.className = 'sc';
+      cell.dataset.b = b; cell.dataset.s = s; cell.dataset.t = subTypes[b][s];
+      const num = document.createElement('div'); num.className='sc-n';
+      if(s>0) num.textContent = s+1;
+      const dot = document.createElement('div'); dot.className='sc-dot';
+      cell.appendChild(num); cell.appendChild(dot);
+      cell.addEventListener('click', ()=>cycleSub(b,s));
+      cells.appendChild(cell);
+    }
+    row.appendChild(cells);
+    g.appendChild(row);
+  }
+}
+
+function renderVel(){
+  const g = document.getElementById('velGrid'); g.innerHTML='';
+  for(let b=0; b<numBeats; b++){
+    const row = document.createElement('div'); row.className='vel-row';
+    const lbl = document.createElement('div'); lbl.className='vel-lbl'; lbl.textContent='B'+(b+1);
+    const wrap = document.createElement('div'); wrap.className='vel-wrap';
+    const bar  = document.createElement('div'); bar.className='vel-bar'; bar.style.width=(beatVel[b]*100)+'%';
+    const val  = document.createElement('div'); val.className='vel-val'; val.textContent=Math.round(beatVel[b]*100);
+    wrap.appendChild(bar);
+    let dragging = false;
+    const setV = e => {
+      const r = wrap.getBoundingClientRect();
+      const cx = e.touches ? e.touches[0].clientX : e.clientX;
+      const v = Math.max(0, Math.min(1, (cx-r.left)/r.width));
+      beatVel[b]=v; bar.style.width=(v*100)+'%'; val.textContent=Math.round(v*100);
+    };
+    wrap.addEventListener('pointerdown', e=>{ dragging=true; wrap.setPointerCapture(e.pointerId); setV(e); });
+    wrap.addEventListener('pointermove', e=>{ if(dragging) setV(e); });
+    wrap.addEventListener('pointerup',   ()=>{ dragging=false; });
+    row.appendChild(lbl); row.appendChild(wrap); row.appendChild(val);
+    g.appendChild(row);
+  }
+}
+
+function renderAll(){ renderDots(); renderGrid(); renderVel(); }
+
+function cycleBeat(i){
+  const o = ['accent','normal','muted'];
+  beatTypes[i] = o[(o.indexOf(beatTypes[i])+1)%3];
+  if(subTypes[i]) subTypes[i][0] = beatTypes[i];
+  renderDots(); renderGrid(); renderVel();
+}
+function cycleSub(b,s){
+  const o = ['accent','normal','muted','ghost'];
+  subTypes[b][s] = o[(o.indexOf(subTypes[b][s])+1)%4];
+  if(s===0){ beatTypes[b] = subTypes[b][s]==='ghost' ? 'normal' : subTypes[b][s]; renderDots(); renderVel(); }
+  renderGrid();
+}
+
+/* ================================
+   AUDIO — SOUND SYNTHESIS
+================================ */
+function playSound(ctx, when, type, vel){
+  if(type==='muted' || type==='ghost') return;
+  const isAcc = type==='accent';
+  const g = ctx.createGain(); g.connect(ctx.destination);
+  g.gain.setValueAtTime(0.0001, when);
+  g.gain.exponentialRampToValueAtTime(Math.max(0.001, vel*volume), when+0.003);
+  const hOff = humanize>0 ? (Math.random()*2-1)*(humanize/1000) : 0;
+  const t = when + hOff;
+
+  if(soundType==='click'){
+    const buf = ctx.createBuffer(1, ctx.sampleRate*0.05, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    const f = isAcc ? 2000 : 900;
+    for(let i=0;i<d.length;i++) d[i] = Math.sin(2*Math.PI*f*i/ctx.sampleRate)*Math.exp(-i/(ctx.sampleRate*0.004));
+    const s = ctx.createBufferSource(); s.buffer=buf; s.connect(g); s.start(t);
+  } else if(soundType==='wood'){
+    const o = ctx.createOscillator(); o.type='sine';
+    o.frequency.setValueAtTime(isAcc?900:600, t);
+    o.frequency.exponentialRampToValueAtTime(60, t+0.04);
+    o.connect(g); g.gain.exponentialRampToValueAtTime(0.0001, t+0.07);
+    o.start(t); o.stop(t+0.08);
+  } else if(soundType==='beep'){
+    const o = ctx.createOscillator(); o.type='square';
+    o.frequency.value = isAcc ? 1400 : 800;
+    o.connect(g); g.gain.exponentialRampToValueAtTime(0.0001, t+0.04);
+    o.start(t); o.stop(t+0.045);
+  } else if(soundType==='rim'){
+    const buf = ctx.createBuffer(1, ctx.sampleRate*0.07, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i] = (Math.random()*2-1)*Math.exp(-i/(ctx.sampleRate*0.007));
+    const s = ctx.createBufferSource(); s.buffer=buf;
+    const hpf = ctx.createBiquadFilter(); hpf.type='highpass';
+    hpf.frequency.value = isAcc ? 2500 : 1200;
+    s.connect(hpf); hpf.connect(g);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+0.06);
+    s.start(t);
+  } else { // sine
+    const o = ctx.createOscillator(); o.type='sine';
+    o.frequency.value = isAcc ? 880 : 440;
+    o.connect(g); g.gain.exponentialRampToValueAtTime(0.0001, t+0.06);
+    o.start(t); o.stop(t+0.07);
+  }
+}
+
+/* ================================
+   SCHEDULER
+================================ */
+function scheduler(){
+  const ctx = audioCtx;
+  const bi = 60/bpm;
+  const si = bi/subdivision;
+  // BT offset: advance audio by latency so it arrives at the right time
+  const btOff = btEnabled ? -(btLatency/1000) : 0;
+
+  while(nextBeatTime < ctx.currentTime + LOOK){
+    const beat = (currentBeat+1) % numBeats;
+    const vel  = beatVel[beat] ?? 0.7;
+
+    for(let s=0; s<subdivision; s++){
+      const rawT  = nextBeatTime + s*si;
+      const sndT  = Math.max(ctx.currentTime+0.005, rawT+btOff);
+      const stype = (subTypes[beat] && subTypes[beat][s]) || 'ghost';
+      const sv    = s===0 ? vel : vel*0.45;
+      playSound(ctx, sndT, stype, sv);
+      // visual queue uses raw (uncompensated) time
+      beatQueue.push({ beat, sub:s, time:rawT, type:stype });
+    }
+    beatExpected.push({ time: performance.now() + (nextBeatTime - ctx.currentTime)*1000 });
+    currentBeat = beat;
+    nextBeatTime += bi;
+  }
+}
+
+/* ================================
+   VISUAL LOOP
+================================ */
+function visualLoop(){
+  if(!isPlaying) return;
+  const now = audioCtx.currentTime;
+  while(beatQueue.length && beatQueue[0].time <= now+0.02){
+    const item = beatQueue.shift();
+    if(item.sub===0) triggerBeat(item.beat, item.type);
+    else             triggerSub(item.beat, item.sub);
+  }
+  animRaf = requestAnimationFrame(visualLoop);
+}
+
+function triggerBeat(beat, type){
+  const prog = (beat+1)/numBeats;
+  const rf = document.getElementById('rFill');
+  rf.setAttribute('stroke-dashoffset', CIRC*(1-prog));
+  rf.style.stroke = type==='accent' ? 'var(--acc)' : 'var(--acc3)';
+  const rn = document.getElementById('rNum');
+  rn.textContent = beat+1;
+  rn.style.color = type==='accent' ? 'var(--acc)' : 'var(--acc3)';
+  document.getElementById('barFill').style.width = (prog*100)+'%';
+  document.querySelectorAll('.bdot').forEach((d,i)=>d.classList.toggle('active', i===beat));
+  document.querySelectorAll('.sc').forEach(c=>
+    c.classList.toggle('active', +c.dataset.b===beat && +c.dataset.s===0));
+}
+function triggerSub(beat, sub){
+  document.querySelectorAll('.sc').forEach(c=>
+    c.classList.toggle('active', +c.dataset.b===beat && +c.dataset.s===sub));
+}
+
+/* ================================
+   PLAY / STOP
+================================ */
+function startMetro(){
+  const ctx = ensureCtx();
+  currentBeat = numBeats-1;
+  nextBeatTime = ctx.currentTime + 0.05;
+  beatQueue = []; beatExpected = [];
+  schedTimer = setInterval(scheduler, SCHED);
+  animRaf = requestAnimationFrame(visualLoop);
+  isPlaying = true;
+  document.getElementById('playBtn').textContent = 'STOP';
+  document.getElementById('playBtn').classList.add('playing');
+  document.getElementById('monBpm').textContent = bpm+' BPM';
+}
+function stopMetro(){
+  clearInterval(schedTimer); cancelAnimationFrame(animRaf);
+  isPlaying = false; beatQueue = [];
+  document.getElementById('playBtn').textContent = 'START';
+  document.getElementById('playBtn').classList.remove('playing');
+  document.getElementById('monBpm').textContent = '';
+  document.getElementById('rFill').setAttribute('stroke-dashoffset', CIRC);
+  document.getElementById('rNum').textContent = '–';
+  document.getElementById('barFill').style.width = '0%';
+  document.querySelectorAll('.bdot').forEach(d=>d.classList.remove('active'));
+  document.querySelectorAll('.sc').forEach(c=>c.classList.remove('active'));
+}
+function restart(){ if(isPlaying){ stopMetro(); startMetro(); } }
+
+/* ================================
+   TAP TEMPO
+================================ */
+function tap(){
+  const now = performance.now();
+  tapTimes = tapTimes.filter(t=>now-t<3000); tapTimes.push(now);
+  if(tapTimes.length >= 2){
+    const ints = [];
+    for(let i=1;i<tapTimes.length;i++) ints.push(tapTimes[i]-tapTimes[i-1]);
+    setBPM(Math.round(60000 / (ints.reduce((a,b)=>a+b)/ints.length)));
+    restart();
+  }
+}
+
+/* ================================
+   BLUETOOTH LATENCY
+================================ */
+function updateBtUI(){
+  const body = document.getElementById('btBody');
+  const sub  = document.getElementById('btSub');
+  body.style.display = btEnabled ? 'flex' : 'none';
+  sub.textContent    = btEnabled ? btLatency+'ms 보정 중' : '꺼짐';
+  sub.style.color    = btEnabled ? 'var(--acc4)' : 'var(--mut)';
+}
+function setBtLatency(ms){
+  btLatency = Math.max(0, Math.min(500, ms));
+  document.getElementById('btSl').value  = btLatency;
+  document.getElementById('btLatN').textContent = btLatency;
+  document.getElementById('btSub').textContent  = btEnabled ? btLatency+'ms 보정 중' : '꺼짐';
+  document.querySelectorAll('.bt-pre').forEach(b=>
+    b.classList.toggle('active', parseInt(b.dataset.ms)===btLatency));
+  restart();
+}
+function startBtMeasure(){
+  if(!micActive){
+    document.getElementById('btStatus').textContent = '⚠️ 모니터 탭에서 마이크를 먼저 켜주세요';
+    return;
+  }
+  if(!isPlaying){
+    document.getElementById('btStatus').textContent = '⚠️ 메트로놈을 먼저 시작해 주세요';
+    return;
+  }
+  btMeasuring=true; btSamples=[];
+  const btn = document.getElementById('btAuto');
+  btn.textContent = '⏳ 측정 중... (5초)';
+  btn.classList.add('meas');
+  document.getElementById('btStatus').textContent = '스피커를 마이크 가까이 두세요';
+  btTimer = setTimeout(()=>{
+    btMeasuring = false;
+    btn.classList.remove('meas');
+    btn.textContent = '🎯 자동 레이턴시 측정';
+    if(btSamples.length < 3){
+      document.getElementById('btStatus').textContent = '감지 부족 — 볼륨을 높이고 재시도하세요';
+      return;
+    }
+    const lates = btSamples.filter(d=>d>0);
+    if(!lates.length){
+      document.getElementById('btStatus').textContent = '소리가 박자보다 빠릅니다. 감도를 조정해 주세요';
+      return;
+    }
+    const avg = Math.round(lates.reduce((a,b)=>a+b)/lates.length);
+    setBtLatency(Math.max(0, Math.min(500, avg)));
+    btEnabled = true;
+    document.getElementById('btToggle').checked = true;
+    updateBtUI();
+    document.getElementById('btStatus').textContent = `✅ 완료: 평균 ${avg}ms → ${btLatency}ms 보정 적용`;
+  }, 5000);
+}
+function collectBtSample(d){ if(btMeasuring) btSamples.push(d); }
+
+/* ================================
+   MONITOR — MIC
+================================ */
+function setupCanvases(){
+  ['wfCv','osCv','hiCv'].forEach(id=>{
+    const c = document.getElementById(id); if(!c) return;
+    c.width  = c.offsetWidth  * devicePixelRatio;
+    c.height = c.offsetHeight * devicePixelRatio;
+    const ctx = c.getContext('2d');
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+    if(id==='wfCv') wfCtx = ctx;
+    else if(id==='osCv') osCtx = ctx;
+    else hiCtx = ctx;
+  });
+}
+
+async function startMic(){
+  const proto = location.protocol;
+  const isSecure = window.isSecureContext;
+  const hasAPI = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  const diag = [`프로토콜: ${proto}`, `SecureContext: ${isSecure}`, `mediaDevices API: ${hasAPI}`,
+                `UA: ${navigator.userAgent.slice(0,60)}`].join('\n');
+
+  if(proto==='about:' || proto==='content:'){
+    showMicErr(
+      `⚠️ 현재 방식(${proto})으로는 마이크 권한을 요청할 수 없습니다.\n\n`+
+      `✅ Chrome 주소창에 직접 입력:\n   file:///sdcard/Download/index.html\n\n[진단]\n`+diag);
+    return;
+  }
+  if(!hasAPI){
+    showMicErr(`마이크 API 사용 불가\n앱 내장 브라우저가 아닌 Chrome/Safari를 직접 실행해 주세요.\n\n[진단]\n`+diag);
+    return;
+  }
+  if(navigator.permissions){
+    try{
+      const p = await navigator.permissions.query({name:'microphone'});
+      if(p.state==='denied'){
+        showMicErr(`마이크 권한이 차단되어 있습니다.\n설정 앱 → 브라우저 → 마이크 → 허용\n\n[진단]\n`+diag);
+        return;
+      }
+    }catch(_){}
+  }
+  try{
+    let stream;
+    try{
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},video:false});
+    }catch(e){
+      stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    }
+    micStream = stream;
+    const mCtx = new(window.AudioContext||window.webkitAudioContext)();
+    if(mCtx.state==='suspended') await mCtx.resume();
+    const src = mCtx.createMediaStreamSource(micStream);
+    analyser = mCtx.createAnalyser();
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.25;
+    src.connect(analyser);
+    micActive = true;
+    clearMicErr();
+    document.getElementById('monDot').classList.add('on');
+    document.getElementById('monStatus').textContent = '마이크 활성 · 모니터링 중';
+    document.getElementById('micBtn').textContent = '🔴 비활성화';
+    document.getElementById('micBtn').classList.add('on');
+    setupCanvases();
+    startMonLoop();
+  }catch(e){
+    const msgs = {
+      NotAllowedError:  '권한 거부 — 브라우저 팝업에서 "허용"을 눌러주세요',
+      PermissionDeniedError: '권한 거부 — 설정에서 마이크를 허용해 주세요',
+      NotFoundError:    '마이크 장치를 찾을 수 없습니다',
+      NotReadableError: '마이크가 다른 앱에서 사용 중입니다',
+      SecurityError:    'HTTPS 또는 localhost 환경이 필요합니다',
+    };
+    showMicErr(`오류: ${e.name}\n${msgs[e.name]||e.message}\n\n[진단]\n`+diag);
+  }
+}
+function stopMic(){
+  if(micStream) micStream.getTracks().forEach(t=>t.stop());
+  micActive=false; cancelAnimationFrame(monRaf);
+  document.getElementById('monDot').classList.remove('on');
+  document.getElementById('monStatus').textContent = '마이크 비활성';
+  document.getElementById('micBtn').textContent = '🎤 마이크 활성화';
+  document.getElementById('micBtn').classList.remove('on');
+}
+function showMicErr(msg){
+  let el = document.getElementById('micErrBox');
+  if(!el){ el=document.createElement('div'); el.id='micErrBox'; el.className='err-box';
+    document.getElementById('micBtn').insertAdjacentElement('afterend',el); }
+  el.textContent = msg;
+  document.getElementById('monStatus').textContent = '마이크 오류';
+}
+function clearMicErr(){
+  const el=document.getElementById('micErrBox'); if(el) el.remove();
+}
+
+/* ================================
+   MONITOR LOOP
+================================ */
+function startMonLoop(){
+  const tb = new Uint8Array(analyser.fftSize);
+  const fb = new Float32Array(analyser.fftSize);
+  function loop(){
+    if(!micActive) return;
+    analyser.getByteTimeDomainData(tb);
+    analyser.getFloatTimeDomainData(fb);
+    let rms=0; for(let i=0;i<fb.length;i++) rms+=fb[i]*fb[i];
+    rms = Math.sqrt(rms/fb.length);
+
+    // onset detection
+    const thresh = 0.018 + 0.07*(1-sensitivity/100);
+    onsetCooldown = Math.max(0, onsetCooldown-1);
+    if(rms>thresh && rms>prevEnergy*1.35 && onsetCooldown===0){
+      onsetCooldown = 7;
+      const now = performance.now();
+      let diffMs = null;
+      if(isPlaying && beatExpected.length>0){
+        const win = (60/bpm)*1000*0.55;
+        let best = Infinity;
+        for(const ex of beatExpected){
+          const d = now-ex.time; if(Math.abs(d)<Math.abs(best)) best=d;
+        }
+        if(Math.abs(best)<win){
+          diffMs=best;
+          updateHisto(best); updateMatch(best); addHit(best);
+          collectBtSample(best);
+        }
+      }
+      onsetHistory.push({time:now, energy:rms, diff:diffMs});
+      if(onsetHistory.length>60) onsetHistory.shift();
+    }
+    prevEnergy = rms;
+
+    drawWF(tb); drawOnsets(); drawHisto();
+    monRaf = requestAnimationFrame(loop);
+  }
+  loop();
+}
+
+/* == DRAW WAVEFORM == */
+function drawWF(tb){
+  const c=document.getElementById('wfCv');
+  const w=c.offsetWidth, h=c.offsetHeight; if(!w||!h) return;
+  wfCtx.clearRect(0,0,w,h);
+  wfCtx.fillStyle='#0d0d1a'; wfCtx.fillRect(0,0,w,h);
+  // center line
+  wfCtx.strokeStyle='rgba(37,37,56,.9)'; wfCtx.lineWidth=1;
+  wfCtx.beginPath(); wfCtx.moveTo(0,h/2); wfCtx.lineTo(w,h/2); wfCtx.stroke();
+  // scrolling beat grid
+  if(isPlaying){
+    const bi=60000/bpm;
+    const phase=((performance.now()%bi)/bi);
+    for(let b=0;b<numBeats;b++){
+      const x = ((b-phase*numBeats%numBeats+numBeats)%numBeats)/numBeats*w;
+      const isAcc = beatTypes[b]==='accent';
+      wfCtx.strokeStyle = isAcc ? 'rgba(200,255,87,.55)' : 'rgba(56,217,255,.2)';
+      wfCtx.lineWidth = isAcc ? 2 : 1;
+      wfCtx.setLineDash(isAcc ? [] : [3,4]);
+      wfCtx.beginPath(); wfCtx.moveTo(x,0); wfCtx.lineTo(x,h); wfCtx.stroke();
+      wfCtx.setLineDash([]);
+      // subdivision ticks
+      if(subdivision>1){
+        const sw = w/numBeats/subdivision;
+        for(let s=1;s<subdivision;s++){
+          const sx = x+s*sw;
+          if(sx>0&&sx<w){
+            wfCtx.strokeStyle='rgba(255,170,51,.18)'; wfCtx.lineWidth=1;
+            wfCtx.setLineDash([2,4]);
+            wfCtx.beginPath(); wfCtx.moveTo(sx,0); wfCtx.lineTo(sx,h); wfCtx.stroke();
+            wfCtx.setLineDash([]);
+          }
+        }
+      }
+    }
+  }
+  // waveform
+  wfCtx.strokeStyle='var(--acc3)'; wfCtx.lineWidth=1.5;
+  wfCtx.beginPath();
+  const step = tb.length/w;
+  for(let x=0;x<w;x++){
+    const v = (tb[Math.floor(x*step)]-128)/128;
+    const y = h/2 + v*(h/2)*0.82;
+    x===0 ? wfCtx.moveTo(x,y) : wfCtx.lineTo(x,y);
+  }
+  wfCtx.stroke();
+}
+
+/* == DRAW ONSETS == */
+function drawOnsets(){
+  const c=document.getElementById('osCv');
+  const w=c.offsetWidth, h=c.offsetHeight; if(!w||!h) return;
+  osCtx.clearRect(0,0,w,h);
+  osCtx.fillStyle='#0d0d1a'; osCtx.fillRect(0,0,w,h);
+  osCtx.strokeStyle='rgba(37,37,56,.8)'; osCtx.lineWidth=1;
+  osCtx.beginPath(); osCtx.moveTo(0,h/2); osCtx.lineTo(w,h/2); osCtx.stroke();
+  const winMs=5000, now=performance.now();
+  for(const o of onsetHistory){
+    const age=now-o.time; if(age>winMs) continue;
+    const x = w*(1-age/winMs);
+    const col = o.diff===null ? 'rgba(255,255,255,.22)'
+              : Math.abs(o.diff)<30 ? 'var(--acc)'
+              : o.diff<0 ? 'var(--acc3)' : 'var(--acc4)';
+    osCtx.fillStyle=col;
+    osCtx.beginPath();
+    osCtx.arc(x, h/2, Math.min(h/2-1, 3+o.energy*18), 0, Math.PI*2);
+    osCtx.fill();
+  }
+  osCtx.fillStyle='rgba(62,62,88,.75)'; osCtx.font='8px DM Mono,monospace';
+  osCtx.fillText('온셋 (5초)', 5, 11);
+}
+
+/* == HISTOGRAM == */
+function updateHisto(d){
+  const range=200;
+  const i = Math.floor((d+range/2)/range*histoData.length);
+  const ci = Math.max(0, Math.min(histoData.length-1, i));
+  histoData[ci] = Math.min(20, histoData[ci]+1);
+  histoData = histoData.map(v=>v*0.97);
+}
+function drawHisto(){
+  const c=document.getElementById('hiCv');
+  const w=c.offsetWidth, h=c.offsetHeight; if(!w||!h) return;
+  hiCtx.clearRect(0,0,w,h);
+  hiCtx.fillStyle='#0d0d1a'; hiCtx.fillRect(0,0,w,h);
+  const bw=w/histoData.length, mx=Math.max(1,...histoData);
+  for(let i=0;i<histoData.length;i++){
+    const bh=(histoData[i]/mx)*h*0.88;
+    const pos=(i-histoData.length/2)/(histoData.length/2);
+    const [r,g,b] = pos<0 ? [56,217,255] : pos>0 ? [255,170,51] : [200,255,87];
+    hiCtx.fillStyle=`rgba(${r},${g},${b},.75)`;
+    hiCtx.fillRect(i*bw, h-bh, bw-1, bh);
+  }
+}
+
+/* == MATCH SCORE == */
+function updateMatch(d){
+  recentDiffs.push(d); if(recentDiffs.length>20) recentDiffs.shift();
+  const score = recentDiffs.reduce((a,dd)=>a+Math.max(0,1-Math.abs(dd)/150),0)/recentDiffs.length;
+  const pct = Math.round(score*100);
+  const el = document.getElementById('matchPct');
+  el.textContent = pct+'%';
+  el.className = 'match-pct'+(pct<50?' bad':pct<75?' warn':'');
+  const msgs = ['박자가 많이 벗어났습니다','타이밍을 더 맞춰보세요','좋습니다, 조금만 더!','훌륭합니다! 리듬 정확 🎯'];
+  document.getElementById('matchSub').textContent = msgs[pct>=90?3:pct>=75?2:pct>=50?1:0];
+}
+
+/* == HIT CHIPS == */
+function addHit(d){
+  const row = document.getElementById('hitRow');
+  const chip = document.createElement('div');
+  const [cls,txt] = Math.abs(d)<30 ? ['on','정확 '+Math.round(d)+'ms']
+                  : d<0 ? ['early','빠름 '+Math.round(-d)+'ms']
+                        : ['late','늦음 '+Math.round(d)+'ms'];
+  chip.className='hit '+cls; chip.textContent=txt;
+  row.prepend(chip);
+  while(row.children.length>10) row.removeChild(row.lastChild);
+}
+
+/* ================================
+   EVENT LISTENERS
+================================ */
+
+// Nav
+document.querySelectorAll('.nav-tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('sc-'+tab.dataset.sc).classList.add('active');
+    if(tab.dataset.sc==='monitor') setTimeout(setupCanvases, 50);
+  });
+});
+
+// BPM buttons
+document.getElementById('bUp').addEventListener('click',   ()=>{ setBPM(bpm+1);  restart(); });
+document.getElementById('bDn').addEventListener('click',   ()=>{ setBPM(bpm-1);  restart(); });
+document.getElementById('bUp10').addEventListener('click', ()=>{ setBPM(bpm+10); restart(); });
+document.getElementById('bDn10').addEventListener('click', ()=>{ setBPM(bpm-10); restart(); });
+document.getElementById('bpmSl').addEventListener('input', e=>{ setBPM(parseInt(e.target.value)); restart(); });
+
+// BPM drag on number
+let dragY=null, dragB0=null;
+const bn = document.getElementById('bpmN');
+bn.addEventListener('pointerdown', e=>{ dragY=e.clientY; dragB0=bpm; bn.setPointerCapture(e.pointerId); });
+bn.addEventListener('pointermove', e=>{ if(dragY!==null){ setBPM(dragB0+Math.round((dragY-e.clientY)/2)); restart(); } });
+bn.addEventListener('pointerup',   ()=>{ dragY=null; });
+
+// Play / Tap
+document.getElementById('playBtn').addEventListener('click', ()=>{ isPlaying ? stopMetro() : startMetro(); });
+document.getElementById('tapBtn').addEventListener('click', tap);
+
+// Time signature
+document.getElementById('tsigRow').addEventListener('click', e=>{
+  const btn=e.target.closest('.ts-btn'); if(!btn) return;
+  document.querySelectorAll('.ts-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  numBeats = parseInt(btn.dataset.b);
+  initState(); renderAll(); restart();
+});
+
+// Sound
+document.getElementById('sndRow').addEventListener('click', e=>{
+  const btn=e.target.closest('.snd-btn'); if(!btn) return;
+  document.querySelectorAll('.snd-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  soundType = btn.dataset.s; ensureCtx();
+});
+document.getElementById('volSl').addEventListener('input', e=>{ volume=parseFloat(e.target.value); });
+
+// Subdivision
+document.getElementById('subPsets').addEventListener('click', e=>{
+  const btn=e.target.closest('.sub-pre'); if(!btn) return;
+  document.querySelectorAll('.sub-pre').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const ns = parseInt(btn.dataset.sub);
+  for(let b=0;b<numBeats;b++){
+    const old=[...subTypes[b]]; subTypes[b]=[];
+    for(let s=0;s<ns;s++) subTypes[b].push(s===0 ? beatTypes[b] : (old[s]??'ghost'));
+  }
+  subdivision=ns; renderGrid(); restart();
+});
+
+// Humanize
+document.getElementById('humSl').addEventListener('input', e=>{
+  humanize=parseInt(e.target.value);
+  document.getElementById('humV').textContent=humanize+'ms';
+});
+
+// Sensitivity
+document.getElementById('sensSl').addEventListener('input', e=>{
+  sensitivity=parseInt(e.target.value);
+  document.getElementById('sensV').textContent=sensitivity;
+});
+
+// Mic
+document.getElementById('micBtn').addEventListener('click', ()=>{ micActive ? stopMic() : startMic(); });
+
+// BT toggle
+document.getElementById('btToggle').addEventListener('change', e=>{
+  btEnabled=e.target.checked; updateBtUI(); restart();
+});
+document.getElementById('btSl').addEventListener('input', e=>{ setBtLatency(parseInt(e.target.value)); });
+document.getElementById('btPresets').addEventListener('click', e=>{
+  const btn=e.target.closest('.bt-pre'); if(!btn) return;
+  setBtLatency(parseInt(btn.dataset.ms));
+});
+document.getElementById('btAuto').addEventListener('click', ()=>{
+  if(btMeasuring){
+    clearTimeout(btTimer); btMeasuring=false;
+    document.getElementById('btAuto').classList.remove('meas');
+    document.getElementById('btAuto').textContent='🎯 자동 레이턴시 측정';
+    document.getElementById('btStatus').textContent='측정 취소됨';
+  } else {
+    startBtMeasure();
+  }
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e=>{
+  if(e.code==='Space'){ e.preventDefault(); document.getElementById('playBtn').click(); }
+  if(e.code==='ArrowUp')  { setBPM(bpm+1);  restart(); }
+  if(e.code==='ArrowDown'){ setBPM(bpm-1);  restart(); }
+  if(e.code==='KeyT') tap();
+});
+
+// Canvas resize
+window.addEventListener('resize', ()=>{ if(micActive) setupCanvases(); });
+
+/* ================================
+   BOOT
+================================ */
+setBPM(120);
+initState();
+renderAll();
+
+})();
+</script>
+</body>
+</html>
